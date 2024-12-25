@@ -1,0 +1,19 @@
+{
+    "cSpell.words": [
+        "anyerror",
+        "comptime",
+        "deinit",
+        "dotenv",
+        "getenv",
+        "instantclient",
+        "odpi",
+        "ORCLCDB",
+        "orelse",
+        "realpath",
+        "sysdba",
+        "SYSOPER",
+        "usize",
+        "varchar",
+        "ymlz"
+    ]
+}

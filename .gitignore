@@ -1,0 +1,6 @@
+.uncommitted
+/lib
+.zig-cache
+zig-out
+.env
+/tmpdir
