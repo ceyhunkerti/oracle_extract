@@ -81,7 +81,7 @@ pub fn run(self: *Self) !u64 {
     self.allocator.free(rows);
 
     while (self.stmt.has_next) {
-        try self.stmt.fetchRows(100, &rows);
+        try self.stmt.fetchRows(self.options.fetch_size, &rows);
         try output_buffer.output(rows);
         self.allocator.free(rows);
         total_rows += rows.len;
