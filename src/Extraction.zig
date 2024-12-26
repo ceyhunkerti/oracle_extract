@@ -91,6 +91,78 @@ pub fn run(self: *Self) !u64 {
     return total_rows;
 }
 
+pub fn run2(self: *Self) !u64 {
+    var output_file = try self.outputFile();
+    defer output_file.close();
+
+    try self.execute();
+
+    // var output_buffer = try OutputBuffer.init(
+    //     self.allocator,
+    //     self.options.batch_write_size,
+    //     output_file,
+    //     self.options.csv_delimiter,
+    //     self.options.csv_quote_strings,
+    // );
+
+    if (self.options.csv_header) {
+        const column_names = try self.qmd.columnNames();
+        var header = try std.mem.join(self.allocator, self.options.csv_delimiter, column_names);
+        header = try self.allocator.realloc(header, header.len + 1);
+        header[header.len - 1] = '\n';
+        _ = try output_file.write(header);
+        self.allocator.free(header);
+    }
+
+    var bw = std.io.bufferedWriter(output_file.writer());
+
+    var rows: [][][]const u8 = undefined;
+    try self.stmt.fetchRowsAsString(self.options.fetch_size, &rows);
+    for (rows) |row| {
+        var x: usize = 0;
+        for (row) |cell| {
+            _ = try bw.write(cell);
+            x += 1;
+            if (x < row.len) {
+                _ = try bw.write(",");
+            }
+        }
+        _ = try bw.write("\n");
+    }
+
+    // var total_rows: u64 = rows.len;
+    // try output_buffer.output(rows);
+    self.allocator.free(rows);
+
+    while (self.stmt.has_next) {
+        try self.stmt.fetchRowsAsString(self.options.fetch_size, &rows);
+        // try output_buffer.output(rows);
+
+        for (rows) |row| {
+            var x: usize = 0;
+            for (row) |cell| {
+                _ = try bw.write(cell);
+                x += 1;
+                if (x < row.len) {
+                    _ = try bw.write(",");
+                }
+                _ = try bw.write(",");
+                // _ = try bw.writer().print("{},", .{cell});
+            }
+            // _ = try bw.writer().print("\n", .{});
+            // const line = try std.mem.join(self.allocator, ",", row);
+            // _ = try bw.write(line);
+            _ = try bw.write("\n");
+        }
+        self.allocator.free(rows);
+        // total_rows += rows.len;
+    }
+    try bw.flush();
+    // try output_buffer.flush();
+
+    return 0;
+}
+
 pub fn outputFile(self: *Self) !std.fs.File {
     return try std.fs.createFileAbsolute(
         try std.fs.path.join(self.allocator, &.{

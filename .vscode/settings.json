@@ -10,6 +10,7 @@
         "ORCLCDB",
         "orelse",
         "realpath",
+        "strval",
         "sysdba",
         "SYSOPER",
         "usize",

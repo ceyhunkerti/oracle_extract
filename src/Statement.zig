@@ -109,6 +109,81 @@ pub fn execute(self: *Self) !void {
     }
 }
 
+pub fn fetchRowsAsString(self: *Self, fetch_size: u32, rows: *[][][]const u8) !void {
+    var buffer_row_index: u32 = 0;
+    var found: c_int = 0;
+    var native_type_num: c.dpiNativeTypeNum = 0;
+
+    rows.* = try self.allocator.alloc([][]const u8, fetch_size);
+    var i: usize = 0;
+
+    while (true) {
+        if (c.dpiStmt_fetch(self.stmt, &found, &buffer_row_index) < 0) {
+            std.debug.print("Failed to fetch rows with error: {s}\n", .{self.conn.getErrorMessage()});
+            return error.FetchStatementError;
+        }
+        if (found == 0) {
+            self.has_next = false;
+            break;
+        }
+        rows.*[i] = try self.allocator.alloc([]const u8, self.column_count);
+        for (1..self.column_count + 1) |j| {
+            var data: ?*c.dpiData = undefined;
+            if (c.dpiStmt_getQueryValue(self.stmt, @intCast(j), &native_type_num, &data) < 0) {
+                std.debug.print("Failed to get query value with error: {s}\n", .{self.conn.getErrorMessage()});
+                return error.FetchStatementError;
+            }
+            var strval: []const u8 = undefined;
+            switch (native_type_num) {
+                c.DPI_NATIVE_TYPE_BYTES => {
+                    var bytes = data.?.value.asBytes;
+                    strval = bytes.ptr[0..bytes.length];
+                },
+                c.DPI_NATIVE_TYPE_DOUBLE => {
+                    var buffer = std.ArrayList(u8).init(self.allocator);
+                    try buffer.writer().print("{d}", .{data.?.value.asDouble});
+                    strval = buffer.items;
+                },
+                c.DPI_NATIVE_TYPE_INT64 => {
+                    var buffer = std.ArrayList(u8).init(self.allocator);
+                    try buffer.writer().print("{d}", .{data.?.value.asInt64});
+                    strval = buffer.items;
+                    // strval = try std.fmt.allocPrint(self.allocator, "{d}", .{data.?.value.asInt64});
+                },
+                c.DPI_NATIVE_TYPE_FLOAT => {
+                    var buffer = std.ArrayList(u8).init(self.allocator);
+                    try buffer.writer().print("{d}", .{data.?.value.asDouble});
+                    strval = buffer.items;
+                    // strval = try std.fmt.allocPrint(self.allocator, "{d}", .{data.?.value.asDouble});
+                },
+                c.DPI_NATIVE_TYPE_BOOLEAN => {
+                    const tf = if (data.?.value.asBoolean > 0) "true" else "false";
+                    strval = try self.allocator.dupe(u8, tf);
+                },
+                c.DPI_NATIVE_TYPE_TIMESTAMP => {
+                    const ts = data.?.value.asTimestamp;
+                    var buffer = std.ArrayList(u8).init(self.allocator);
+                    try buffer.writer().print("{d}-{d}-{d} {d}:{d}:{d}", .{ ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second });
+                    strval = buffer.items;
+                },
+                else => {
+                    std.debug.print("Failed to get query value with error: {s}\n", .{self.conn.getErrorMessage()});
+                    return error.FetchStatementError;
+                },
+            }
+            rows.*[i][j - 1] = strval;
+        }
+        i += 1;
+        if (i == fetch_size) {
+            self.has_next = true;
+            break;
+        }
+    }
+    if (i < fetch_size) {
+        rows.* = try self.allocator.realloc(rows.*, i);
+    }
+}
+
 pub fn fetchRows(self: *Self, fetch_size: u32, rows: *[]RowData) !void {
     var buffer_row_index: u32 = 0;
     var found: c_int = 0;

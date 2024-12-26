@@ -132,7 +132,7 @@ pub fn drop_tables(self: Self, conn: *Connection) !void {
 
 pub fn run_extraction(allocator: std.mem.Allocator, options: Options) !void {
     var extraction = Extraction.init(allocator, options);
-    _ = try extraction.run();
+    _ = try extraction.run2();
 }
 
 test "bench" {
