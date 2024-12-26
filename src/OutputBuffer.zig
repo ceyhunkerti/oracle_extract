@@ -5,7 +5,7 @@ const RowData = @import("RowData.zig");
 const Self = @This();
 
 size: u64,
-rows: std.ArrayList(RowData),
+rows: std.ArrayList([]u8),
 allocator: std.mem.Allocator,
 index: usize = 0,
 output_file: std.fs.File = undefined,
@@ -21,7 +21,7 @@ pub fn init(
 ) !Self {
     return Self{
         .size = size,
-        .rows = try std.ArrayList(RowData).initCapacity(allocator, size),
+        .rows = try std.ArrayList([]u8).initCapacity(allocator, size),
         .allocator = allocator,
         .output_file = output_file,
         .csv_delimiter = csv_delimiter,
@@ -32,18 +32,16 @@ pub fn init(
 pub fn output(self: *Self, rows: []RowData) !void {
     if (self.index + rows.len > self.size) {
         try self.flush();
-    } else {
-        // todo append slice
-        for (try self.allocator.dupe(RowData, rows)) |row| {
-            try self.rows.append(row);
-            self.index += 1;
-        }
+    }
+    // todo append slice
+    for (rows) |row| {
+        try self.rows.append(try row.toCsvString(self.csv_delimiter, self.csv_quote_strings));
+        self.index += 1;
     }
 }
 
 pub fn flush(self: *Self) !void {
     if (self.index > 0) {
-        // todo output format
         try self.writeCsv();
         self.clear();
     }
@@ -57,20 +55,10 @@ pub fn writeCsv(self: *Self) !void {
 }
 
 pub fn toCsvStringBuffer(self: *Self) ![]u8 {
-    var i: usize = 0;
-    var buffer = try std.ArrayList([]u8).initCapacity(self.allocator, self.index);
-    while (i < self.index) {
-        const s = try self.rows.items[i].toCsvString(self.csv_delimiter, self.csv_quote_strings);
-        try buffer.append(s);
-        i += 1;
-    }
-    return try std.mem.join(self.allocator, "\n", buffer.items);
+    return try std.mem.join(self.allocator, "\n", self.rows.items[0..self.index]);
 }
 
 pub fn clear(self: *Self) void {
     self.index = 0;
-    for (self.rows.items) |row| {
-        row.deinit();
-    }
     self.rows.clearRetainingCapacity();
 }
