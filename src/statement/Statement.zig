@@ -193,27 +193,27 @@ pub fn queryMetadata(self: *Self) !QueryMetadata {
     return try QueryMetadata.init(self.allocator, self);
 }
 
-// test "fetchRows single row" {
-//     // const allocator = std.testing.allocator;
-//     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-//     defer arena.deinit();
-//     const sql =
-//         \\select
-//         \\1 as A, 2 as B, 'hello' as C, to_date('2020-01-01', 'yyyy-mm-dd') as D
-//         \\from dual
-//     ;
-//     var conn = t.getTestConnection(arena.allocator()) catch unreachable;
+test "fetchRows single row" {
+    // const allocator = std.testing.allocator;
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const sql =
+        \\select
+        \\1 as A, 2 as B, 'hello' as C, to_date('2020-01-01', 'yyyy-mm-dd') as D
+        \\from dual
+    ;
+    var conn = t.getTestConnection(arena.allocator()) catch unreachable;
 
-//     var stmt = try conn.prepareStatement(sql);
-//     try stmt.execute();
+    var stmt = try conn.prepareStatement(sql);
+    try stmt.execute();
 
-//     var rows: [][][]const u8 = undefined;
-//     try stmt.fetchRowsAsString(&rows);
+    var rows: [][][]const u8 = undefined;
+    try stmt.fetchRowsAsString(&rows);
 
-//     try testing.expectEqual(rows.len, 1);
-//     try testing.expectEqual(rows[0].len, 4);
-//     try testing.expectEqualStrings(rows[0][0], "1");
-//     try testing.expectEqualStrings(rows[0][1], "2");
-//     try testing.expectEqualStrings(rows[0][2], "hello");
-//     try testing.expectEqualStrings(rows[0][3], "2020-1-1 0:0:0");
-// }
+    try testing.expectEqual(rows.len, 1);
+    try testing.expectEqual(rows[0].len, 4);
+    try testing.expectEqualStrings(rows[0][0], "1");
+    try testing.expectEqualStrings(rows[0][1], "2");
+    try testing.expectEqualStrings(rows[0][2], "hello");
+    try testing.expectEqualStrings(rows[0][3], "2020-1-1 0:0:0");
+}
