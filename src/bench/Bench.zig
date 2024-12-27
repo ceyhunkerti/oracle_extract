@@ -1,10 +1,10 @@
 const std = @import("std");
 const testing = std.testing;
 
-const Value = @import("../ColumnData.zig").Value;
 const Connection = @import("../Connection.zig");
 const Extraction = @import("../Extraction.zig");
 const Options = @import("../Options.zig");
+const BindValue = @import("../statement/bind.zig").BindValue;
 const t = @import("../testing/testing.zig");
 
 const Self = @This();
@@ -29,9 +29,9 @@ fn loadTable1(conn: *Connection) anyerror!void {
     var stmt = try conn.prepareStatement(sql);
 
     for (0..table1_record_count) |i| {
-        const v1 = Value{ .Int = @intCast(i) };
-        const v2 = Value{ .String = try std.fmt.allocPrint(conn.allocator, "hello_{d}", .{i}) };
-        const v3 = Value{ .String = @constCast("a") };
+        const v1 = BindValue{ .Int = @intCast(i) };
+        const v2 = BindValue{ .String = try std.fmt.allocPrint(conn.allocator, "hello_{d}", .{i}) };
+        const v3 = BindValue{ .String = @constCast("a") };
         try stmt.bindValueByPos(v1, false, 1);
 
         try stmt.bindValueByPos(v2, false, 2);
@@ -70,6 +70,7 @@ pub const Table = struct {
         var stmt = try conn.prepareStatement(self.create_sql);
         stmt.execute() catch |err| {
             if (std.mem.containsAtLeast(u8, stmt.conn.getErrorMessage(), 1, "ORA-00955")) {
+                std.debug.print("Table {s} already exists dropping and recreating...\n", .{self.table_name});
                 try self.drop(conn);
                 try self.create(conn);
             } else {

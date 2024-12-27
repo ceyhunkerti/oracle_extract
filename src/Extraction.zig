@@ -58,14 +58,16 @@ fn writeHeader(self: Self, bw: anytype) !void {
     self.allocator.free(header);
 }
 
-inline fn writeRows(bw: anytype, rows: [][][]const u8) !void {
+inline fn writeRows(bw: anytype, rows: [][][]const u8, delimiter: []const u8) !void {
     for (rows) |row| {
-        var x: usize = 0;
+        var cell_index: usize = 0;
         for (row) |cell| {
             _ = try bw.write(cell);
-            x += 1;
-            if (x < row.len) {
-                _ = try bw.write(",");
+
+            cell_index += 1;
+            if (cell_index < row.len) {
+                // do not write delimiter for last cell
+                _ = try bw.write(delimiter);
             }
         }
         _ = try bw.write("\n");
@@ -73,13 +75,8 @@ inline fn writeRows(bw: anytype, rows: [][][]const u8) !void {
 }
 
 fn outputFile(self: *Self) !std.fs.File {
-    return try std.fs.createFileAbsolute(
-        try std.fs.path.join(self.allocator, &.{
-            self.options.output_dir,
-            self.options.output_file,
-        }),
-        .{},
-    );
+    // method reserved for future use to support options in file name.
+    return try std.fs.createFileAbsolute(self.options.output_file, .{});
 }
 
 pub fn run(self: *Self) !u64 {
@@ -100,7 +97,7 @@ pub fn run(self: *Self) !u64 {
         if (self.stmt.found == 0) {
             break;
         }
-        try writeRows(bw, rows);
+        try writeRows(bw, rows, self.options.csv_delimiter);
         self.allocator.free(rows);
     }
     return 0;
@@ -183,7 +180,6 @@ test "All data types extraction" {
         .batch_write_size = 2,
         .csv_quote_strings = true,
     };
-    try options.validate();
 
     var extraction = Self.init(allocator, options);
     const total_rows = try extraction.run();
