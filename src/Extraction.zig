@@ -94,10 +94,11 @@ pub fn run(self: *Self) !u64 {
         try self.writeHeader(&bw);
     }
 
+    const serialization_options = self.options.serializationOptions();
     var total_rows: u64 = 0;
     var rows: [][][]const u8 = undefined;
     while (true) {
-        try self.stmt.fetchRowsAsString(&rows);
+        try self.stmt.fetchRowsAsString(&rows, serialization_options);
         if (rows.len == 0) {
             break;
         }
@@ -192,8 +193,8 @@ test "All data types extraction" {
 
     const expected =
         \\A,B,C,D,E,F
-        \\1,2.1,hello,2020-1-1 0:0:0,1.1,2020-1-1 0:0:0
-        \\2,3.1,world,2020-1-2 0:0:0,2.1,2020-1-2 0:0:0
+        \\1,2.1,"hello",2020-1-1 0:0:0,1.1,2020-1-1 0:0:0
+        \\2,3.1,"world",2020-1-2 0:0:0,2.1,2020-1-2 0:0:0
     ;
     const actual = try allocator.alloc(u8, expected.len);
     _ = try fd.readAll(actual);

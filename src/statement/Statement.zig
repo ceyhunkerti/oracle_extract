@@ -3,6 +3,7 @@ const testing = std.testing;
 
 const Connection = @import("../Connection.zig");
 const QueryMetadata = @import("../metadata/QueryMetadata.zig");
+const SerializationOptions = @import("../Options.zig").SerializationOptions;
 const t = @import("../testing/testing.zig");
 const BindValue = @import("./bind.zig").BindValue;
 
@@ -117,7 +118,7 @@ pub fn execute(self: *Self) !void {
     }
 }
 
-pub fn fetchRowsAsString(self: *Self, rows: *[][][]const u8) !void {
+pub fn fetchRowsAsString(self: *Self, rows: *[][][]const u8, o: SerializationOptions) !void {
     var buffer_row_index: u32 = 0;
     var native_type_num: c.dpiNativeTypeNum = 0;
 
@@ -133,7 +134,6 @@ pub fn fetchRowsAsString(self: *Self, rows: *[][][]const u8) !void {
             break;
         }
         rows.*[i] = try self.allocator.alloc([]const u8, self.column_count);
-        // std.debug.print("---------", .{});
 
         for (1..self.column_count + 1) |j| {
             var data: ?*c.dpiData = undefined;
@@ -146,6 +146,11 @@ pub fn fetchRowsAsString(self: *Self, rows: *[][][]const u8) !void {
                 c.DPI_NATIVE_TYPE_BYTES => {
                     var bytes = data.?.value.asBytes;
                     strval = bytes.ptr[0..bytes.length];
+                    if (o.quote_strings) {
+                        var buffer = std.ArrayList(u8).init(self.allocator);
+                        try buffer.writer().print("\"{s}\"", .{strval});
+                        strval = buffer.items;
+                    }
                 },
                 c.DPI_NATIVE_TYPE_DOUBLE => {
                     var buffer = std.ArrayList(u8).init(self.allocator);
@@ -208,7 +213,7 @@ test "fetchRows single row" {
     try stmt.execute();
 
     var rows: [][][]const u8 = undefined;
-    try stmt.fetchRowsAsString(&rows);
+    try stmt.fetchRowsAsString(&rows, .{});
 
     try testing.expectEqual(rows.len, 1);
     try testing.expectEqual(rows[0].len, 4);

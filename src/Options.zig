@@ -33,3 +33,13 @@ pub fn authModeInt(self: Self) u32 {
     }
     return auth_mode_int;
 }
+
+pub const SerializationOptions = struct {
+    quote_strings: bool = false,
+};
+
+pub fn serializationOptions(self: Self) SerializationOptions {
+    return .{
+        .quote_strings = self.csv_quote_strings,
+    };
+}
