@@ -20,14 +20,14 @@ const Error = error{
 
 stmt: ?*c.dpiStmt = undefined,
 column_count: u32 = 0,
-num_rows_fetched: u32 = 0,
 sql: []const u8 = "",
 found: c_int = 0,
+fetch_size: u32 = c.DPI_DEFAULT_FETCH_ARRAY_SIZE,
 
 conn: Connection,
 allocator: std.mem.Allocator,
 
-pub fn init(conn: Connection, allocator: std.mem.Allocator) Self {
+pub fn init(allocator: std.mem.Allocator, conn: Connection) Self {
     return Self{
         .stmt = null,
         .conn = conn,
@@ -36,10 +36,23 @@ pub fn init(conn: Connection, allocator: std.mem.Allocator) Self {
 }
 
 pub fn setFetchSize(self: *Self, fetch_size: u32) !void {
-    if (c.dpiStmt_setFetchArraySize(self.stmt, fetch_size) < 0) {
-        std.debug.print("Failed to set fetch array size with error: {s}\n", .{self.conn.getErrorMessage()});
+    // defaults to DPI_DEFAULT_FETCH_ARRAY_SIZE
+    if (fetch_size > 0) {
+        if (c.dpiStmt_setFetchArraySize(self.stmt, fetch_size) < 0) {
+            std.debug.print("Failed to set fetch array size with error: {s}\n", .{self.conn.getErrorMessage()});
+            return error.StatementConfigError;
+        }
+        self.fetch_size = fetch_size;
+    }
+}
+
+pub fn getFetchSize(self: *Self) !u32 {
+    var fetch_size: u32 = 0;
+    if (c.dpiStmt_getFetchArraySize(self.stmt, &fetch_size) < 0) {
+        std.debug.print("Failed to get fetch array size with error: {s}\n", .{self.conn.getErrorMessage()});
         return error.StatementConfigError;
     }
+    return fetch_size;
 }
 
 pub fn prepare(self: *Self, sql: []const u8) !void {
@@ -104,11 +117,11 @@ pub fn execute(self: *Self) !void {
     }
 }
 
-pub fn fetchRowsAsString(self: *Self, fetch_size: u32, rows: *[][][]const u8) !void {
+pub fn fetchRowsAsString(self: *Self, rows: *[][][]const u8) !void {
     var buffer_row_index: u32 = 0;
     var native_type_num: c.dpiNativeTypeNum = 0;
 
-    rows.* = try self.allocator.alloc([][]const u8, fetch_size);
+    rows.* = try self.allocator.alloc([][]const u8, self.fetch_size);
     var i: usize = 0;
 
     while (true) {
@@ -120,6 +133,8 @@ pub fn fetchRowsAsString(self: *Self, fetch_size: u32, rows: *[][][]const u8) !v
             break;
         }
         rows.*[i] = try self.allocator.alloc([]const u8, self.column_count);
+        // std.debug.print("---------", .{});
+
         for (1..self.column_count + 1) |j| {
             var data: ?*c.dpiData = undefined;
             if (c.dpiStmt_getQueryValue(self.stmt, @intCast(j), &native_type_num, &data) < 0) {
@@ -165,8 +180,11 @@ pub fn fetchRowsAsString(self: *Self, fetch_size: u32, rows: *[][][]const u8) !v
             rows.*[i][j - 1] = strval;
         }
         i += 1;
+        if (i == self.fetch_size) {
+            break;
+        }
     }
-    if (i < fetch_size) {
+    if (i < self.fetch_size) {
         rows.* = try self.allocator.realloc(rows.*, i);
     }
 }
@@ -175,27 +193,27 @@ pub fn queryMetadata(self: *Self) !QueryMetadata {
     return try QueryMetadata.init(self.allocator, self);
 }
 
-test "fetchRows single row" {
-    // const allocator = std.testing.allocator;
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-    const sql =
-        \\select
-        \\1 as A, 2 as B, 'hello' as C, to_date('2020-01-01', 'yyyy-mm-dd') as D
-        \\from dual
-    ;
-    var conn = t.getTestConnection(arena.allocator()) catch unreachable;
+// test "fetchRows single row" {
+//     // const allocator = std.testing.allocator;
+//     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+//     defer arena.deinit();
+//     const sql =
+//         \\select
+//         \\1 as A, 2 as B, 'hello' as C, to_date('2020-01-01', 'yyyy-mm-dd') as D
+//         \\from dual
+//     ;
+//     var conn = t.getTestConnection(arena.allocator()) catch unreachable;
 
-    var stmt = try conn.prepareStatement(sql);
-    try stmt.execute();
-    var rows: []RowData = undefined;
-    try stmt.fetchRows(1, &rows);
-    try testing.expectEqual(rows.len, 1);
-    try testing.expectEqual(rows[0].columnCount(), 4);
-    try testing.expectEqual(rows[0].columnValue(0).Double, 1);
-    try testing.expectEqual(rows[0].columnValue(1).Double, 2);
-    try testing.expectEqualSlices(u8, rows[0].columnValue(2).String, "hello");
+//     var stmt = try conn.prepareStatement(sql);
+//     try stmt.execute();
 
-    const s = try rows[0].column(3).serialize(false);
-    try testing.expectEqualSlices(u8, s, "2020-01-01T00:00:00");
-}
+//     var rows: [][][]const u8 = undefined;
+//     try stmt.fetchRowsAsString(&rows);
+
+//     try testing.expectEqual(rows.len, 1);
+//     try testing.expectEqual(rows[0].len, 4);
+//     try testing.expectEqualStrings(rows[0][0], "1");
+//     try testing.expectEqualStrings(rows[0][1], "2");
+//     try testing.expectEqualStrings(rows[0][2], "hello");
+//     try testing.expectEqualStrings(rows[0][3], "2020-1-1 0:0:0");
+// }

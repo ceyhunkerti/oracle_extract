@@ -1,7 +1,7 @@
 const std = @import("std");
 const testing = std.testing;
 
-const Statement = @import("../Statement.zig");
+const Statement = @import("../statement/Statement.zig");
 const t = @import("../testing/testing.zig");
 const Column = @import("./Column.zig");
 
@@ -42,7 +42,7 @@ test "init" {
     const sql = "select 1 as A, 2 as B from dual";
 
     const conn = try t.getTestConnection(testing.allocator);
-    var stmt = Statement.init(conn, allocator);
+    var stmt = Statement.init(allocator, conn);
     try stmt.prepare(sql);
     try stmt.execute();
 

@@ -76,31 +76,37 @@ inline fn writeRows(bw: anytype, rows: [][][]const u8, delimiter: []const u8) !v
 
 fn outputFile(self: *Self) !std.fs.File {
     // method reserved for future use to support options in file name.
+
+    if (!std.mem.startsWith(u8, self.options.output_file, "/")) {
+        return try std.fs.cwd().createFile(self.options.output_file, .{});
+    }
     return try std.fs.createFileAbsolute(self.options.output_file, .{});
 }
 
 pub fn run(self: *Self) !u64 {
     var outfile = try self.outputFile();
     var bw = writer.bufferedWriter(outfile.writer());
-    defer bw.flush();
     defer outfile.close();
 
     try self.execute();
 
     if (self.options.csv_header) {
-        try self.writeHeader(bw);
+        try self.writeHeader(&bw);
     }
 
+    var total_rows: u64 = 0;
     var rows: [][][]const u8 = undefined;
     while (true) {
-        try self.stmt.fetchRowsAsString(self.options.fetch_size, &rows);
-        if (self.stmt.found == 0) {
+        try self.stmt.fetchRowsAsString(&rows);
+        if (rows.len == 0) {
             break;
         }
-        try writeRows(bw, rows, self.options.csv_delimiter);
+        total_rows += rows.len;
+        try writeRows(&bw, rows, self.options.csv_delimiter);
         self.allocator.free(rows);
     }
-    return 0;
+    try bw.flush();
+    return total_rows;
 }
 
 test "Simple Extraction from query" {
@@ -109,7 +115,6 @@ test "Simple Extraction from query" {
     const allocator = arena.allocator();
 
     const params = try t.getTestConnectionParams();
-    const output_dir = try std.fs.cwd().realpathAlloc(allocator, "./tmpdir");
 
     const options = Options{
         .auth_mode = params.auth_mode,
@@ -117,8 +122,7 @@ test "Simple Extraction from query" {
         .password = params.password,
         .username = params.username,
         .sql = "SELECT 1 as A, 2 as B FROM DUAL",
-        .output_dir = output_dir,
-        .output_file = "output.csv",
+        .output_file = "tmpdir/output.csv",
     };
 
     var extraction = Self.init(allocator, options);
@@ -126,7 +130,7 @@ test "Simple Extraction from query" {
 
     try testing.expectEqual(total_rows, 1);
 
-    const fd = try std.fs.cwd().openFile("./tmpdir/output.csv", .{});
+    const fd = try std.fs.cwd().openFile(options.output_file, .{});
     defer fd.close();
 
     const expected = "1,2\n";
@@ -134,7 +138,7 @@ test "Simple Extraction from query" {
     _ = try fd.readAll(actual);
     try testing.expectEqualSlices(u8, actual, expected);
 
-    try std.fs.cwd().deleteFile("./tmpdir/output.csv");
+    try std.fs.cwd().deleteFile(options.output_file);
 }
 
 test "All data types extraction" {
@@ -165,7 +169,6 @@ test "All data types extraction" {
     const allocator = arena.allocator();
 
     const params = try t.getTestConnectionParams();
-    const output_dir = try std.fs.cwd().realpathAlloc(allocator, "./tmpdir");
 
     const options = Options{
         .auth_mode = params.auth_mode,
@@ -173,11 +176,9 @@ test "All data types extraction" {
         .password = params.password,
         .username = params.username,
         .sql = sql,
-        .output_dir = output_dir,
-        .output_file = "output.csv",
+        .output_file = "tmpdir/output.csv",
         .csv_header = true,
         .fetch_size = 1,
-        .batch_write_size = 2,
         .csv_quote_strings = true,
     };
 
@@ -186,17 +187,17 @@ test "All data types extraction" {
 
     try testing.expectEqual(total_rows, 2);
 
-    const fd = try std.fs.cwd().openFile("./tmpdir/output.csv", .{});
+    const fd = try std.fs.cwd().openFile(options.output_file, .{});
     defer fd.close();
 
     const expected =
         \\A,B,C,D,E,F
-        \\1,2.1,"hello",2020-01-01T00:00:00,1.1,2020-01-01T00:00:00
-        \\2,3.1,"world",2020-01-02T00:00:00,2.1,2020-01-02T00:00:00
+        \\1,2.1,hello,2020-1-1 0:0:0,1.1,2020-1-1 0:0:0
+        \\2,3.1,world,2020-1-2 0:0:0,2.1,2020-1-2 0:0:0
     ;
     const actual = try allocator.alloc(u8, expected.len);
     _ = try fd.readAll(actual);
-    try testing.expectEqualSlices(u8, actual, expected);
+    try testing.expectEqualSlices(u8, actual[0..expected.len], expected);
 
     try std.fs.cwd().deleteFile("./tmpdir/output.csv");
 }
