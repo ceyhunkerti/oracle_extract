@@ -1,7 +1,7 @@
 const std = @import("std");
 const testing = std.testing;
 
-pub const Statement = @import("Statement.zig");
+pub const Statement = @import("statement/Statement.zig");
 const t = @import("testing/testing.zig");
 
 const c = @cImport({
@@ -95,7 +95,7 @@ pub fn connect(
 }
 
 pub fn createStatement(self: *Self) Statement {
-    return Statement.init(self.*, self.allocator);
+    return Statement.init(self.allocator, self.*);
 }
 
 pub fn prepareStatement(self: *Self, sql: []const u8) !Statement {

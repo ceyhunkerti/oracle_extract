@@ -1,6 +1,7 @@
 {
     "cSpell.words": [
         "anyerror",
+        "anytype",
         "comptime",
         "deinit",
         "dotenv",
@@ -10,6 +11,7 @@
         "ORCLCDB",
         "orelse",
         "realpath",
+        "strval",
         "sysdba",
         "SYSOPER",
         "usize",

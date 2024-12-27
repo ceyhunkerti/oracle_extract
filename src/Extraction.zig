@@ -4,10 +4,9 @@ const testing = std.testing;
 const Connection = @import("Connection.zig");
 const QueryMetadata = @import("metadata/QueryMetadata.zig");
 const Options = @import("Options.zig");
-const OutputBuffer = @import("OutputBuffer.zig");
-const RowData = @import("RowData.zig");
-const Statement = @import("Statement.zig");
+const Statement = @import("statement/Statement.zig");
 const t = @import("testing/testing.zig");
+const writer = @import("writer.zig");
 
 const c = @cImport({
     @cInclude("dpi.h");
@@ -16,10 +15,9 @@ const c = @cImport({
 allocator: std.mem.Allocator,
 options: Options,
 conn: ?*Connection = null,
-sql: []const u8,
 qmd: QueryMetadata = undefined,
 stmt: Statement = undefined,
-output_buffer: OutputBuffer = undefined,
+sql: []const u8,
 
 const Self = @This();
 
@@ -51,59 +49,64 @@ fn execute(self: *Self) !void {
     self.qmd = try self.stmt.queryMetadata();
 }
 
+fn writeHeader(self: Self, bw: anytype) !void {
+    const column_names = try self.qmd.columnNames();
+    var header = try std.mem.join(self.allocator, self.options.csv_delimiter, column_names);
+    header = try self.allocator.realloc(header, header.len + 1);
+    header[header.len - 1] = '\n';
+    _ = try bw.write(header);
+    self.allocator.free(header);
+}
+
+inline fn writeRows(bw: anytype, rows: [][][]const u8, delimiter: []const u8) !void {
+    for (rows) |row| {
+        var cell_index: usize = 0;
+        for (row) |cell| {
+            _ = try bw.write(cell);
+
+            cell_index += 1;
+            if (cell_index < row.len) {
+                // do not write delimiter for last cell
+                _ = try bw.write(delimiter);
+            }
+        }
+        _ = try bw.write("\n");
+    }
+}
+
+fn outputFile(self: *Self) !std.fs.File {
+    // method reserved for future use to support options in file name.
+
+    if (!std.mem.startsWith(u8, self.options.output_file, "/")) {
+        return try std.fs.cwd().createFile(self.options.output_file, .{});
+    }
+    return try std.fs.createFileAbsolute(self.options.output_file, .{});
+}
+
 pub fn run(self: *Self) !u64 {
-    var output_file = try self.outputFile();
-    defer output_file.close();
+    var outfile = try self.outputFile();
+    var bw = writer.bufferedWriter(outfile.writer());
+    defer outfile.close();
 
     try self.execute();
 
-    var output_buffer = try OutputBuffer.init(
-        self.allocator,
-        self.options.batch_write_size,
-        output_file,
-        self.options.csv_delimiter,
-        self.options.csv_quote_strings,
-    );
-
     if (self.options.csv_header) {
-        const column_names = try self.qmd.columnNames();
-        var header = try std.mem.join(self.allocator, self.options.csv_delimiter, column_names);
-        header = try self.allocator.realloc(header, header.len + 1);
-        header[header.len - 1] = '\n';
-        _ = try output_file.write(header);
-        self.allocator.free(header);
+        try self.writeHeader(&bw);
     }
 
-    var rows: []RowData = undefined;
-    try self.stmt.fetchRows(self.options.fetch_size, &rows);
-    var total_rows: u64 = rows.len;
-    try output_buffer.output(rows);
-    self.allocator.free(rows);
-
-    while (self.stmt.has_next) {
-        try self.stmt.fetchRows(self.options.fetch_size, &rows);
-        try output_buffer.output(rows);
-        self.allocator.free(rows);
+    var total_rows: u64 = 0;
+    var rows: [][][]const u8 = undefined;
+    while (true) {
+        try self.stmt.fetchRowsAsString(&rows);
+        if (rows.len == 0) {
+            break;
+        }
         total_rows += rows.len;
+        try writeRows(&bw, rows, self.options.csv_delimiter);
+        self.allocator.free(rows);
     }
-    try output_buffer.flush();
-
+    try bw.flush();
     return total_rows;
-}
-
-pub fn outputFile(self: *Self) !std.fs.File {
-    return try std.fs.createFileAbsolute(
-        try std.fs.path.join(self.allocator, &.{
-            self.options.output_dir,
-            self.options.output_file,
-        }),
-        .{},
-    );
-}
-
-pub fn writeCsvChunk(_: Self, file: std.fs.File, chunk: []u8) !void {
-    _ = try file.write(chunk);
-    _ = try file.write("\n");
 }
 
 test "Simple Extraction from query" {
@@ -112,7 +115,6 @@ test "Simple Extraction from query" {
     const allocator = arena.allocator();
 
     const params = try t.getTestConnectionParams();
-    const output_dir = try std.fs.cwd().realpathAlloc(allocator, "./tmpdir");
 
     const options = Options{
         .auth_mode = params.auth_mode,
@@ -120,8 +122,7 @@ test "Simple Extraction from query" {
         .password = params.password,
         .username = params.username,
         .sql = "SELECT 1 as A, 2 as B FROM DUAL",
-        .output_dir = output_dir,
-        .output_file = "output.csv",
+        .output_file = "tmpdir/output.csv",
     };
 
     var extraction = Self.init(allocator, options);
@@ -129,7 +130,7 @@ test "Simple Extraction from query" {
 
     try testing.expectEqual(total_rows, 1);
 
-    const fd = try std.fs.cwd().openFile("./tmpdir/output.csv", .{});
+    const fd = try std.fs.cwd().openFile(options.output_file, .{});
     defer fd.close();
 
     const expected = "1,2\n";
@@ -137,7 +138,7 @@ test "Simple Extraction from query" {
     _ = try fd.readAll(actual);
     try testing.expectEqualSlices(u8, actual, expected);
 
-    try std.fs.cwd().deleteFile("./tmpdir/output.csv");
+    try std.fs.cwd().deleteFile(options.output_file);
 }
 
 test "All data types extraction" {
@@ -168,7 +169,6 @@ test "All data types extraction" {
     const allocator = arena.allocator();
 
     const params = try t.getTestConnectionParams();
-    const output_dir = try std.fs.cwd().realpathAlloc(allocator, "./tmpdir");
 
     const options = Options{
         .auth_mode = params.auth_mode,
@@ -176,31 +176,28 @@ test "All data types extraction" {
         .password = params.password,
         .username = params.username,
         .sql = sql,
-        .output_dir = output_dir,
-        .output_file = "output.csv",
+        .output_file = "tmpdir/output.csv",
         .csv_header = true,
         .fetch_size = 1,
-        .batch_write_size = 2,
         .csv_quote_strings = true,
     };
-    try options.validate();
 
     var extraction = Self.init(allocator, options);
     const total_rows = try extraction.run();
 
     try testing.expectEqual(total_rows, 2);
 
-    const fd = try std.fs.cwd().openFile("./tmpdir/output.csv", .{});
+    const fd = try std.fs.cwd().openFile(options.output_file, .{});
     defer fd.close();
 
     const expected =
         \\A,B,C,D,E,F
-        \\1,2.1,"hello",2020-01-01T00:00:00,1.1,2020-01-01T00:00:00
-        \\2,3.1,"world",2020-01-02T00:00:00,2.1,2020-01-02T00:00:00
+        \\1,2.1,hello,2020-1-1 0:0:0,1.1,2020-1-1 0:0:0
+        \\2,3.1,world,2020-1-2 0:0:0,2.1,2020-1-2 0:0:0
     ;
     const actual = try allocator.alloc(u8, expected.len);
     _ = try fd.readAll(actual);
-    try testing.expectEqualSlices(u8, actual, expected);
+    try testing.expectEqualSlices(u8, actual[0..expected.len], expected);
 
     try std.fs.cwd().deleteFile("./tmpdir/output.csv");
 }

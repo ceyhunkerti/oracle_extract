@@ -5,20 +5,14 @@ const c = @cImport({
 });
 const Self = @This();
 
-const OptionsError = error{
-    InvalidSizeError,
-};
-
 connection_string: []const u8,
 username: []const u8,
 password: []const u8,
 auth_mode: ?[]const u8 = null,
 sql: []const u8,
 fetch_size: u32 = 1000,
-batch_write_size: u64 = 1000,
 
-output_dir: []const u8 = ".",
-output_file: []const u8 = "output.dat",
+output_file: []const u8 = "./output.dat",
 parallel: ?u8 = 1,
 parallelization_column: ?[]const u8 = null,
 parallelization_chunking_method: ?[]const u8 = null,
@@ -38,13 +32,4 @@ pub fn authModeInt(self: Self) u32 {
         }
     }
     return auth_mode_int;
-}
-
-pub fn validate(self: Self) OptionsError!void {
-    if (self.fetch_size > self.batch_write_size) {
-        return OptionsError.InvalidSizeError;
-    }
-    if (self.fetch_size == 0 or self.batch_write_size == 0) {
-        return OptionsError.InvalidSizeError;
-    }
 }
