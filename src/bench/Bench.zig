@@ -134,15 +134,3 @@ pub fn run_extraction(allocator: std.mem.Allocator, options: Options) !void {
     var extraction = Extraction.init(allocator, options);
     _ = try extraction.run2();
 }
-
-test "bench" {
-    // var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    // defer arena.deinit();
-    // const allocator = arena.allocator();
-    // table1_record_count = 2;
-
-    // var conn = try t.getTestConnection(allocator);
-    // const bench = Self{};
-    // try bench.run(&conn);
-    // try conn.deinit();
-}
