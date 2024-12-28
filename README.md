@@ -37,8 +37,9 @@ zig-out/bin/ox run \
     # optional (auth mode if you need SYSDBA)
     --auth-mode SYSDBA \
     --password oracle_password \
+    # You can use multi line strings see examples folder.
     --sql "SELECT * FROM my_schema.my_table_name" \
-    # (output-file can be an absolute path)
+    # output-file can be an absolute path.
     --output-file "output.csv" \
     --fetch-size 10000
 ```
