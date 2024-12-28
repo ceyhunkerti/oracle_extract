@@ -107,7 +107,7 @@ pub fn initCli(allocator: std.mem.Allocator) !Command {
         Option{
             .type = ValueType.int,
             .names = &.{"fetch-size"},
-            .default = "1000",
+            .default = "10000",
         },
         Option{
             .type = ValueType.string,

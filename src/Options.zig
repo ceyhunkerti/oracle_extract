@@ -10,7 +10,7 @@ username: []const u8,
 password: []const u8,
 auth_mode: ?[]const u8 = null,
 sql: []const u8,
-fetch_size: u32 = 1000,
+fetch_size: u32 = 10_000,
 
 output_file: []const u8 = "./output.dat",
 
