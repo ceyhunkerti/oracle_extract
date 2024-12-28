@@ -3,7 +3,7 @@
 - Extracts data from an oracle query and outputs to csv.
 - ~3.7x faster than a plugin based JDBC implementation. (with same parameters.)
 
-## Build
+## Build from source
 
 You may need to setup instant client paths if you don't have it already.
 
