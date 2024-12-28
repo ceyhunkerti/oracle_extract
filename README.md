@@ -19,9 +19,9 @@ export LD_LIBRARY_PATH=/path/to/instantclient_[version]
 zig-out/bin/ox run \
     --connection-string "localhost:1521/ORCLCDB" \
     --username sys \
+    --auth-mode SYSDBA \
     --password Oracle_123 \
     # optional (auth mode)
-    --auth-mode SYSDBA \
     --sql "SELECT * FROM sys.table1" \
     # (output-file can be an absolute path)
     --output-file "output.csv" \
