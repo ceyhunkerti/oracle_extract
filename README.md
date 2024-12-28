@@ -1,4 +1,4 @@
-# Fast Oracle to CSV Extraction Utility
+# Oracle to CSV Extraction Utility
 
 - Extracts data from an oracle query and outputs to csv.
 - ~3.7x faster than a plugin based JDBC implementation. (with same parameters.)
