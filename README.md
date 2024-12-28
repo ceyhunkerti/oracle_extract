@@ -27,6 +27,7 @@ zig build -Doptimize=ReleaseFast
 
 - See the binary `ox` at `zig-out/bin/`.
 
+## Running
 
 ```sh
 zig-out/bin/ox run \
