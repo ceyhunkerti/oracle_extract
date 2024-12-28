@@ -22,7 +22,7 @@ zig-out/bin/ox run \
     --auth-mode SYSDBA \
     --sql "SELECT * FROM sys.table1" \
     # (output-file can be an absolute path)
-    --output-file "tmpdir/run1-output.csv" \
+    --output-file "output.csv" \
     --fetch-size 10000
 ```
 
