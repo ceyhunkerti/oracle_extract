@@ -31,12 +31,13 @@ zig build -Doptimize=ReleaseFast
 
 ```sh
 zig-out/bin/ox run \
+    # change below to actual connection string.
     --connection-string "localhost:1521/ORCLCDB" \
-    --username sys \
-    # optional (auth mode)
+    --username oracle_username \
+    # optional (auth mode if you need SYSDBA)
     --auth-mode SYSDBA \
-    --password Oracle_123 \
-    --sql "SELECT * FROM sys.table1" \
+    --password oracle_password \
+    --sql "SELECT * FROM my_schema.my_table_name" \
     # (output-file can be an absolute path)
     --output-file "output.csv" \
     --fetch-size 10000
