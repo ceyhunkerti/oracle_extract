@@ -35,6 +35,10 @@
             .url = "https://github.com/abhinav/temp.zig/archive/0.3.0.tar.gz",
             .hash = "122095027cb551451a12706f958487bacc9bec1dfcd8c6bdacff890fb8d641755a58",
         },
+        .argz = .{
+            .url = "https://github.com/ceyhunkerti/argz/archive/refs/tags/0.0.1.tar.gz",
+            .hash = "12204b2458358a135a2f625336b75c3446e62c0ece2ab8b51c2c848890ae4a897f4d",
+        },
     },
     .paths = .{
         "build.zig",

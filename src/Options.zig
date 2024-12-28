@@ -13,9 +13,6 @@ sql: []const u8,
 fetch_size: u32 = 1000,
 
 output_file: []const u8 = "./output.dat",
-parallel: ?u8 = 1,
-parallelization_column: ?[]const u8 = null,
-parallelization_chunking_method: ?[]const u8 = null,
 
 // csv options
 csv_header: bool = false,

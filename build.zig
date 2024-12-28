@@ -20,11 +20,6 @@ pub fn build(b: *std.Build) !void {
     try flags.append("-std=c99");
     const c_flags = flags.items;
 
-    const ymlz = b.dependency("ymlz", .{
-        .target = target,
-        .optimize = optimize,
-    });
-
     const exe = b.addExecutable(.{
         .name = "ox",
         .root_source_file = b.path("src/main.zig"),
@@ -43,8 +38,13 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
+    const argz = b.dependency("argz", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     exe.root_module.addImport("zdt", zdt.module("zdt"));
-    exe.root_module.addImport("ymlz", ymlz.module("root"));
+    exe.root_module.addImport("argz", argz.module("argz"));
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
@@ -87,7 +87,6 @@ pub fn build(b: *std.Build) !void {
     exe_unit_tests.linkLibC();
     exe_unit_tests.addLibraryPath(b.path("lib/instantclient_21_16"));
     exe_unit_tests.root_module.addImport("zdt", zdt.module("zdt"));
-    exe_unit_tests.root_module.addImport("ymlz", ymlz.module("root"));
 
     const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
 
