@@ -16,16 +16,16 @@ export LD_LIBRARY_PATH=/path/to/instantclient_[version]
 
 ## Build
 
-You may need to install `libaio` required by oracle client.
+- Install [zig](https://ziglang.org) first.
+- You may need to install `libaio` required by oracle client.
 ```sh
 sudo apt install libaio1
 ```
-
-Build the binary.
+- Build the binary.
 ```sh
 zig build -Doptimize=ReleaseFast
 ```
-See the binary `ox` at `zig-out/bin/`.
+- See the binary `ox` at `zig-out/bin/`.
 
 
 ```sh
