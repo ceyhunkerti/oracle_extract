@@ -13,7 +13,7 @@ You may need to setup instant client paths if you don't have it already.
 export LD_LIBRARY_PATH=/path/to/instantclient_[version]
 ```
 
-- Install [zig](https://ziglang.org) first.
+- Install [zig](https://ziglang.org).
 
 - You may need to install `libaio` required by oracle client.
 ```sh
