@@ -60,12 +60,9 @@ fn writeHeader(self: Self, bw: anytype) !void {
 
 inline fn writeRows(bw: anytype, rows: [][][]const u8, delimiter: []const u8) !void {
     for (rows) |row| {
-        var cell_index: usize = 0;
-        for (row) |cell| {
+        for (row, 0..) |cell, cell_index| {
             _ = try bw.write(cell);
-
-            cell_index += 1;
-            if (cell_index < row.len) {
+            if (cell_index < row.len - 1) {
                 // do not write delimiter for last cell
                 _ = try bw.write(delimiter);
             }

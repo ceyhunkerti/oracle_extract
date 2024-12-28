@@ -87,6 +87,7 @@ pub fn build(b: *std.Build) !void {
     exe_unit_tests.linkLibC();
     exe_unit_tests.addLibraryPath(b.path("lib/instantclient_21_16"));
     exe_unit_tests.root_module.addImport("zdt", zdt.module("zdt"));
+    exe_unit_tests.root_module.addImport("argz", argz.module("argz"));
 
     const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
 
