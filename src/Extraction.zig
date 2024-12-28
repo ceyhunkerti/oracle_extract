@@ -200,5 +200,5 @@ test "All data types extraction" {
     _ = try fd.readAll(actual);
     try testing.expectEqualSlices(u8, actual[0..expected.len], expected);
 
-    try std.fs.cwd().deleteFile("./tmpdir/output.csv");
+    try std.fs.cwd().deleteFile("tmpdir/output.csv");
 }
