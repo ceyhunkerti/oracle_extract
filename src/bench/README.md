@@ -1,2 +1,2 @@
-Sources are under bench folder does not included in the binary and they are for testing purposes.
-These can be removed later.
+Sources are under bench folder do not included in the binary and they are for testing purposes.
+They can be removed later.
