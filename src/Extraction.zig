@@ -67,7 +67,6 @@ inline fn writeRows(bw: anytype, rows: [][][]const u8, delimiter: []const u8) !v
         for (row, 0..) |cell, cell_index| {
             _ = try bw.write(cell);
             if (cell_index < row.len - 1) {
-                // do not write delimiter for last cell
                 _ = try bw.write(delimiter);
             }
         }
