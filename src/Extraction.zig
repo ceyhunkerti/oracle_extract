@@ -190,8 +190,8 @@ test "All data types extraction" {
 
     const expected =
         \\A,B,C,D,E,F
-        \\1,2.1,"hello",2020-1-1 0:0:0,1.1,2020-1-1 0:0:0
-        \\2,3.1,"world",2020-1-2 0:0:0,2.1,2020-1-2 0:0:0
+        \\1,2.1,"hello",2020-01-01 00:00:00 +00:00,1.1,2020-01-01 00:00:00 +00:00
+        \\2,3.1,"world",2020-01-02 00:00:00 +00:00,2.1,2020-01-02 00:00:00 +00:00
     ;
     const actual = try allocator.alloc(u8, expected.len);
     _ = try fd.readAll(actual);

@@ -174,7 +174,20 @@ pub fn fetchRowsAsString(self: *Self, rows: *[][][]const u8, o: SerializationOpt
                 c.DPI_NATIVE_TYPE_TIMESTAMP => {
                     const ts = data.?.value.asTimestamp;
                     var buffer = std.ArrayList(u8).init(self.allocator);
-                    try buffer.writer().print("{d}-{d}-{d} {d}:{d}:{d}", .{ ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second });
+                    // add hour offset and minute offset timezone
+                    //
+                    const tzSign: u8 = if (ts.tzHourOffset < 0) '-' else '+';
+                    try buffer.writer().print("{d}-{d:0>2}-{d:0>2} {d:0>2}:{d:0>2}:{d:0>2} {c}{d:0>2}:{d:0>2}", .{
+                        ts.year,
+                        ts.month,
+                        ts.day,
+                        ts.hour,
+                        ts.minute,
+                        ts.second,
+                        tzSign,
+                        @abs(ts.tzHourOffset),
+                        @abs(ts.tzMinuteOffset),
+                    });
                     strval = buffer.items;
                 },
                 else => {
@@ -220,5 +233,5 @@ test "fetchRows single row" {
     try testing.expectEqualStrings(rows[0][0], "1");
     try testing.expectEqualStrings(rows[0][1], "2");
     try testing.expectEqualStrings(rows[0][2], "hello");
-    try testing.expectEqualStrings(rows[0][3], "2020-1-1 0:0:0");
+    try testing.expectEqualStrings(rows[0][3], "2020-01-01 00:00:00 +00:00");
 }
