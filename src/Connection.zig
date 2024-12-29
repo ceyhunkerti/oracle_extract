@@ -10,8 +10,8 @@ const c = @cImport({
 
 const Self = @This();
 
-handle: ?*c.dpiConn = undefined,
-dpiContext: ?*c.dpiContext = undefined,
+handle: ?*c.dpiConn = null,
+dpiContext: ?*c.dpiContext = null,
 allocator: std.mem.Allocator,
 
 const ConnectionError = error{
@@ -45,13 +45,11 @@ pub fn create_context(self: *Self) !void {
 }
 
 pub fn deinit(self: *Self) !void {
-    if (c.dpiConn_release(self.handle) < 0) {
-        std.debug.print("Failed to release connection\n", .{});
-        return error.FailedToReleaseConnection;
-    }
-    if (c.dpiContext_destroy(self.dpiContext) < 0) {
-        std.debug.print("Failed to destroy context\n", .{});
-        return error.FailedToDestroyContext;
+    if (self.handle != null) {
+        if (c.dpiConn_release(self.handle) < 0) {
+            std.debug.print("Failed to release connection: {s}\n", .{self.getErrorMessage()});
+            return error.FailedToReleaseConnection;
+        }
     }
 }
 
@@ -130,7 +128,8 @@ test "create context" {
 }
 
 test "connect" {
-    _ = try t.getTestConnection(testing.allocator);
+    var conn = try t.getTestConnection(testing.allocator);
+    try conn.deinit();
 }
 
 test {

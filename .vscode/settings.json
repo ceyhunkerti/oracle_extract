@@ -6,6 +6,7 @@
         "comptime",
         "deinit",
         "dotenv",
+        "errdefer",
         "getenv",
         "instantclient",
         "odpi",

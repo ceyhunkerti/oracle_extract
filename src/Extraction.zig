@@ -30,6 +30,10 @@ pub fn init(allocator: std.mem.Allocator, options: Options) Self {
     };
 }
 
+pub fn closeConnection(self: *Self) !void {
+    return try self.conn.?.deinit();
+}
+
 fn connect(self: *Self) !void {
     var conn = Connection.init(self.allocator);
     self.conn = &conn;
@@ -104,6 +108,7 @@ pub fn run(self: *Self) !u64 {
         self.allocator.free(rows);
     }
     try bw.flush();
+    try self.closeConnection();
     return total_rows;
 }
 
