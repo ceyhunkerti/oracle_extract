@@ -141,59 +141,59 @@ pub fn fetchRowsAsString(self: *Self, rows: *[][][]const u8, o: SerializationOpt
                 std.debug.print("Failed to get query value with error: {s}\n", .{self.conn.getErrorMessage()});
                 return error.FetchStatementError;
             }
-            var strval: []const u8 = undefined;
-            switch (native_type_num) {
-                c.DPI_NATIVE_TYPE_BYTES => {
-                    var bytes = data.?.value.asBytes;
-                    strval = bytes.ptr[0..bytes.length];
-                    if (o.quote_strings) {
+            var strval: []const u8 = "";
+            if (data.?.isNull == 0) {
+                switch (native_type_num) {
+                    c.DPI_NATIVE_TYPE_BYTES => {
+                        var bytes = data.?.value.asBytes;
+                        strval = bytes.ptr[0..bytes.length];
+                        if (o.quote_strings) {
+                            var buffer = std.ArrayList(u8).init(self.allocator);
+                            try buffer.writer().print("\"{s}\"", .{strval});
+                            strval = buffer.items;
+                        }
+                    },
+                    c.DPI_NATIVE_TYPE_DOUBLE => {
                         var buffer = std.ArrayList(u8).init(self.allocator);
-                        try buffer.writer().print("\"{s}\"", .{strval});
+                        try buffer.writer().print("{d}", .{data.?.value.asDouble});
                         strval = buffer.items;
-                    }
-                },
-                c.DPI_NATIVE_TYPE_DOUBLE => {
-                    var buffer = std.ArrayList(u8).init(self.allocator);
-                    try buffer.writer().print("{d}", .{data.?.value.asDouble});
-                    strval = buffer.items;
-                },
-                c.DPI_NATIVE_TYPE_INT64 => {
-                    var buffer = std.ArrayList(u8).init(self.allocator);
-                    try buffer.writer().print("{d}", .{data.?.value.asInt64});
-                    strval = buffer.items;
-                },
-                c.DPI_NATIVE_TYPE_FLOAT => {
-                    var buffer = std.ArrayList(u8).init(self.allocator);
-                    try buffer.writer().print("{d}", .{data.?.value.asDouble});
-                    strval = buffer.items;
-                },
-                c.DPI_NATIVE_TYPE_BOOLEAN => {
-                    const tf = if (data.?.value.asBoolean > 0) "true" else "false";
-                    strval = try self.allocator.dupe(u8, tf);
-                },
-                c.DPI_NATIVE_TYPE_TIMESTAMP => {
-                    const ts = data.?.value.asTimestamp;
-                    var buffer = std.ArrayList(u8).init(self.allocator);
-                    // add hour offset and minute offset timezone
-                    //
-                    const tzSign: u8 = if (ts.tzHourOffset < 0) '-' else '+';
-                    try buffer.writer().print("{d}-{d:0>2}-{d:0>2} {d:0>2}:{d:0>2}:{d:0>2} {c}{d:0>2}:{d:0>2}", .{
-                        ts.year,
-                        ts.month,
-                        ts.day,
-                        ts.hour,
-                        ts.minute,
-                        ts.second,
-                        tzSign,
-                        @abs(ts.tzHourOffset),
-                        @abs(ts.tzMinuteOffset),
-                    });
-                    strval = buffer.items;
-                },
-                else => {
-                    std.debug.print("Failed to get query value with error: {s}\n", .{self.conn.getErrorMessage()});
-                    return error.FetchStatementError;
-                },
+                    },
+                    c.DPI_NATIVE_TYPE_INT64 => {
+                        var buffer = std.ArrayList(u8).init(self.allocator);
+                        try buffer.writer().print("{d}", .{data.?.value.asInt64});
+                        strval = buffer.items;
+                    },
+                    c.DPI_NATIVE_TYPE_FLOAT => {
+                        var buffer = std.ArrayList(u8).init(self.allocator);
+                        try buffer.writer().print("{d}", .{data.?.value.asDouble});
+                        strval = buffer.items;
+                    },
+                    c.DPI_NATIVE_TYPE_BOOLEAN => {
+                        const tf = if (data.?.value.asBoolean > 0) "true" else "false";
+                        strval = try self.allocator.dupe(u8, tf);
+                    },
+                    c.DPI_NATIVE_TYPE_TIMESTAMP => {
+                        const ts = data.?.value.asTimestamp;
+                        var buffer = std.ArrayList(u8).init(self.allocator);
+                        const tzSign: u8 = if (ts.tzHourOffset < 0) '-' else '+';
+                        try buffer.writer().print("{d}-{d:0>2}-{d:0>2} {d:0>2}:{d:0>2}:{d:0>2} {c}{d:0>2}:{d:0>2}", .{
+                            ts.year,
+                            ts.month,
+                            ts.day,
+                            ts.hour,
+                            ts.minute,
+                            ts.second,
+                            tzSign,
+                            @abs(ts.tzHourOffset),
+                            @abs(ts.tzMinuteOffset),
+                        });
+                        strval = buffer.items;
+                    },
+                    else => {
+                        std.debug.print("Failed to get query value with error: {s}\n", .{self.conn.getErrorMessage()});
+                        return error.FetchStatementError;
+                    },
+                }
             }
             rows.*[i][j - 1] = strval;
         }

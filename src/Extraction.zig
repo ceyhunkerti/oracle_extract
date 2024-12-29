@@ -159,6 +159,15 @@ test "All data types extraction" {
         \\cast(2.1 as float) as E,
         \\to_timestamp('2020-01-02 00:00:00', 'yyyy-mm-dd hh24:mi:ss') as F
         \\from dual
+        \\union all
+        \\select
+        \\cast(null as number) as A,
+        \\cast(null as number) as B,
+        \\cast(null as varchar2(5)) as C,
+        \\cast(null as date) as D,
+        \\cast(null as float) as E,
+        \\cast(null as timestamp) as F
+        \\from dual
         \\) order by A
     ;
 
@@ -183,7 +192,7 @@ test "All data types extraction" {
     var extraction = Self.init(allocator, options);
     const total_rows = try extraction.run();
 
-    try testing.expectEqual(total_rows, 2);
+    try testing.expectEqual(total_rows, 3);
 
     const fd = try std.fs.cwd().openFile(options.output_file, .{});
     defer fd.close();
@@ -192,6 +201,7 @@ test "All data types extraction" {
         \\A,B,C,D,E,F
         \\1,2.1,"hello",2020-01-01 00:00:00 +00:00,1.1,2020-01-01 00:00:00 +00:00
         \\2,3.1,"world",2020-01-02 00:00:00 +00:00,2.1,2020-01-02 00:00:00 +00:00
+        \\,,,,,
     ;
     const actual = try allocator.alloc(u8, expected.len);
     _ = try fd.readAll(actual);
