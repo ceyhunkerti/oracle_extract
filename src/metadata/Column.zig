@@ -1,10 +1,7 @@
 const std = @import("std");
 
+const c = @import("../c.zig").c;
 const Statement = @import("../statement/Statement.zig");
-
-const c = @cImport({
-    @cInclude("dpi.h");
-});
 
 const Self = @This();
 const Error = error{

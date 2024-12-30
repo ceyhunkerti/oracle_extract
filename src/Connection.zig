@@ -1,12 +1,9 @@
 const std = @import("std");
 const testing = std.testing;
 
+const c = @import("c.zig").c;
 pub const Statement = @import("statement/Statement.zig");
 const t = @import("testing/testing.zig");
-
-const c = @cImport({
-    @cInclude("dpi.h");
-});
 
 const Self = @This();
 

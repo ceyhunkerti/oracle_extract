@@ -1,8 +1,6 @@
 const zdt = @import("zdt");
 
-const c = @cImport({
-    @cInclude("dpi.h");
-});
+const c = @import("../c.zig").c;
 
 pub const BindValue = union(enum) {
     String: []u8,

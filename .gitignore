@@ -4,3 +4,4 @@
 zig-out
 .env
 /tmpdir
+demo.zig

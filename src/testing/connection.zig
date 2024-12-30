@@ -1,10 +1,8 @@
 const std = @import("std");
 
+const c = @import("../c.zig").c;
 const Connection = @import("../Connection.zig");
 
-const c = @cImport({
-    @cInclude("dpi.h");
-});
 const TestConnectionError = error{MissingTestEnvironmentVariable};
 
 pub const TestConnectionParams = struct {

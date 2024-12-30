@@ -1,15 +1,12 @@
 const std = @import("std");
 const testing = std.testing;
 
+const c = @import("../c.zig").c;
 const Connection = @import("../Connection.zig");
 const BindValue = @import("../statement/bind.zig").BindValue;
 const t = @import("../testing/testing.zig");
 
 const Self = @This();
-const c = @cImport({
-    @cInclude("dpi.h");
-});
-
 allocator: std.mem.Allocator = undefined,
 conn: *Connection = undefined,
 table_name: []const u8 = "",

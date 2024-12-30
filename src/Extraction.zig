@@ -1,16 +1,13 @@
 const std = @import("std");
 const testing = std.testing;
 
+const c = @import("c.zig").c;
 const Connection = @import("Connection.zig");
 const QueryMetadata = @import("metadata/QueryMetadata.zig");
 const Options = @import("Options.zig");
 const Statement = @import("statement/Statement.zig");
 const t = @import("testing/testing.zig");
 const writer = @import("writer.zig");
-
-const c = @cImport({
-    @cInclude("dpi.h");
-});
 
 allocator: std.mem.Allocator,
 options: Options,

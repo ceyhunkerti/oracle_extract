@@ -1,6 +1,7 @@
 const std = @import("std");
 const testing = std.testing;
 
+const c = @import("../c.zig").c;
 const Connection = @import("../Connection.zig");
 const QueryMetadata = @import("../metadata/QueryMetadata.zig");
 const SerializationOptions = @import("../Options.zig").SerializationOptions;
@@ -8,9 +9,6 @@ const t = @import("../testing/testing.zig");
 const BindValue = @import("./bind.zig").BindValue;
 
 const Self = @This();
-const c = @cImport({
-    @cInclude("dpi.h");
-});
 const Error = error{
     PrepareStatementError,
     ExecuteStatementError,
