@@ -12,8 +12,7 @@ dpiContext: ?*c.dpiContext = null,
 allocator: std.mem.Allocator,
 
 const ConnectionError = error{
-    MissingEnvVar_DPI_MAJOR_VERSION,
-    MissingEnvVar_DPI_MINOR_VERSION,
+    FailedToCreateConnection,
     FailedToCreateContext,
     FailedToReleaseConnection,
     FailedToDestroyContext,
@@ -45,7 +44,7 @@ pub fn deinit(self: *Self) !void {
     if (self.handle != null) {
         if (c.dpiConn_release(self.handle) < 0) {
             std.debug.print("Failed to release connection: {s}\n", .{self.getErrorMessage()});
-            return error.FailedToReleaseConnection;
+            return ConnectionError.FailedToReleaseConnection;
         }
     }
 }
@@ -54,7 +53,7 @@ fn connCreateParams(self: *Self, auth_mode_int: u32) !c.dpiConnCreateParams {
     var conn_create_params: c.dpiConnCreateParams = undefined;
     if (c.dpiContext_initConnCreateParams(self.dpiContext, &conn_create_params) < 0) {
         std.debug.print("Failed to initialize connection create params\n", .{});
-        return error.FailedToInitializeConnCreateParams;
+        return ConnectionError.FailedToInitializeConnCreateParams;
     }
     conn_create_params.authMode = auth_mode_int;
 
@@ -85,7 +84,7 @@ pub fn connect(
         &self.handle,
     ) < 0) {
         std.debug.print("Failed to create connection with error: {s}\n", .{self.getErrorMessage()});
-        return error.FailedToCreateConnection;
+        return ConnectionError.FailedToCreateConnection;
     }
 }
 

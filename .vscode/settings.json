@@ -16,6 +16,7 @@
         "strval",
         "sysdba",
         "SYSOPER",
+        "tocsv",
         "usize",
         "varchar",
         "ymlz"

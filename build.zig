@@ -51,7 +51,6 @@ pub fn build(b: *std.Build) !void {
     });
     exe.addIncludePath(b.path("lib/odpi/include"));
     exe.linkLibC();
-    exe.addLibraryPath(b.path("lib/instantclient_21_16"));
 
     const zdt = b.dependency("zdt", .{
         .target = target,
@@ -104,7 +103,6 @@ pub fn build(b: *std.Build) !void {
     });
     exe_unit_tests.addIncludePath(b.path("lib/odpi/include"));
     exe_unit_tests.linkLibC();
-    exe_unit_tests.addLibraryPath(b.path("lib/instantclient_21_16"));
     exe_unit_tests.root_module.addImport("zdt", zdt.module("zdt"));
     exe_unit_tests.root_module.addImport("argz", argz.module("argz"));
 

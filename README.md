@@ -20,6 +20,10 @@ export LD_LIBRARY_PATH=/path/to/instantclient_[version]
 sudo apt install libaio1
 ```
 
+- todo: implement this in Makefile and remove Justfile.
+- Download ODPI-C and place the extracted resources to `project-root/lib/odpi`
+
+
 - Build the binary.
 ```sh
 zig build -Doptimize=ReleaseFast
